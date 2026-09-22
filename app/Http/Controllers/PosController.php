@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class PosController extends Controller
 {
+    /**
+     * Menampilkan antarmuka utama Point of Sale (POS) untuk Kasir.
+     * Mengambil seluruh kategori dan daftar menu produk yang tersedia.
+     */
     public function index()
     {
         $kategoriList = Kategori::all();
@@ -21,8 +25,13 @@ class PosController extends Controller
         return view('pos.index', compact('kategoriList', 'produkList'));
     }
 
+    /**
+     * Memproses penyimpanan pesanan baru per meja dan menerbitkan invoice billing.
+     * Menggunakan DB::transaction untuk menjamin keutuhan data (ACID).
+     */
     public function simpanPesanan(Request $request)
     {
+        // 1. Validasi input: meja wajib diisi dan minimal ada 1 menu yang dipesan
         $request->validate([
             'no_meja' => 'required|string',
             'items' => 'required|array|min:1',
@@ -31,14 +40,15 @@ class PosController extends Controller
         ]);
 
         return DB::transaction(function () use ($request) {
-            // Ambil kasir default
+            // Ambil akun kasir yang bertugas
             $kasir = User::where('role', 'kasir')->first() ?? User::first();
 
-            // Cek stok terlebih dahulu
             $totalBayar = 0;
             $itemsData = [];
 
+            // 2. Validasi ketersediaan stok fisik sebelum pesanan dicatat
             foreach ($request->items as $item) {
+                // lockForUpdate mencegah race condition pembelian ganda secara bersamaan
                 $produk = Produk::lockForUpdate()->find($item['id']);
                 if ($produk->stok < $item['qty']) {
                     return response()->json([
@@ -58,10 +68,10 @@ class PosController extends Controller
                 ];
             }
 
-            // Generate No Pesanan Unik
+            // 3. Buat nomor transaksi pesanan unik (ORD-YYYYMMDD-XXXX)
             $noPesanan = 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
 
-            // Simpan Pesanan
+            // 4. Simpan header pesanan (Status awal: Billed)
             $pesanan = Pesanan::create([
                 'user_id' => $kasir ? $kasir->id : 1,
                 'no_pesanan' => $noPesanan,
@@ -70,7 +80,7 @@ class PosController extends Controller
                 'status_pesanan' => 'Billed',
             ]);
 
-            // Simpan Detail Pesanan
+            // 5. Simpan rincian item ke tabel detail_pesanan
             foreach ($itemsData as $data) {
                 DetailPesanan::create([
                     'pesanan_id' => $pesanan->id,
@@ -81,11 +91,11 @@ class PosController extends Controller
                 ]);
             }
 
-            // Hitung Pajak PB1 10%
+            // 6. Hitung Pajak Restoran PB1 (10% sesuai regulasi F&B)
             $pajak = (int) round($totalBayar * 0.10);
             $grandTotal = $totalBayar + $pajak;
 
-            // Generate Billing
+            // 7. Terbitkan lembar tagihan resmi (Billing) sebelum pembayaran
             $noTagihan = 'INV-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
             $billing = Billing::create([
                 'pesanan_id' => $pesanan->id,
@@ -108,6 +118,9 @@ class PosController extends Controller
         });
     }
 
+    /**
+     * Menampilkan halaman tagihan (Billing) meja dan memuat nomor VA awal (default BCA).
+     */
     public function billing($id)
     {
         $billing = Billing::with(['pesanan.detail.produk', 'pembayaran'])->findOrFail($id);
@@ -115,6 +128,10 @@ class PosController extends Controller
         return view('pos.billing', compact('billing', 'vaData'));
     }
 
+    /**
+     * Endpoint AJAX untuk mengganti bank Virtual Account (BCA, BNI, BRI, QRIS, Mandiri).
+     * Memanggil Core API /v2/charge secara asinkron tanpa reload halaman.
+     */
     public function getVa(Request $request, $id)
     {
         $billing = Billing::with(['pesanan.detail.produk'])->findOrFail($id);
@@ -123,6 +140,10 @@ class PosController extends Controller
         return response()->json($vaData);
     }
 
+    /**
+     * Membuat Token Transaksi Snap resmi dari Midtrans Sandbox.
+     * Token ini digunakan oleh frontend JavaScript (snap.js) untuk membuka modal pop-up pembayaran.
+     */
     public function getSnapToken(Request $request, $id)
     {
         $billing = Billing::with(['pesanan.detail.produk'])->findOrFail($id);
@@ -139,6 +160,94 @@ class PosController extends Controller
         return response()->json($snapData);
     }
 
+    /**
+     * Memeriksa status transaksi langsung ke server Midtrans (GET /v2/{order_id}/status).
+     * Jika di simulator/bank sudah 'settlement' atau 'capture', sistem otomatis melunasi tagihan
+     * dan memotong stok barang secara realtime.
+     */
+    public function cekStatusMidtrans(Request $request, $id)
+    {
+        $billing = Billing::with(['pesanan.detail.produk', 'pembayaran'])->findOrFail($id);
+
+        // Jika sudah tercatat lunas di database internal
+        if ($billing->pembayaran) {
+            return response()->json([
+                'status' => 'settlement',
+                'is_paid' => true,
+                'message' => 'Tagihan sudah lunas!',
+            ]);
+        }
+
+        $orderId = $request->query('order_id');
+        if (!$orderId) {
+            return response()->json([
+                'status' => 'pending',
+                'is_paid' => false,
+                'message' => 'Order ID tidak ditemukan',
+            ]);
+        }
+
+        // Panggil status transaksi dari API Midtrans
+        $statusData = \App\Services\MidtransService::getTransactionStatus($orderId);
+
+        if ($statusData && isset($statusData['transaction_status'])) {
+            $trxStatus = $statusData['transaction_status'];
+
+            // Status settlement / capture menandakan dana sudah sukses diterima
+            if (in_array($trxStatus, ['settlement', 'capture'])) {
+                return DB::transaction(function () use ($billing, $statusData) {
+                    // 1. Simpan bukti pelunasan Non-Tunai
+                    Pembayaran::create([
+                        'billing_id' => $billing->id,
+                        'metode' => 'Non-Tunai',
+                        'uang_dibayar' => $billing->grand_total,
+                        'kembalian' => 0,
+                        'no_referensi' => $statusData['transaction_id'] ?? $statusData['order_id'],
+                        'tanggal_bayar' => now(),
+                    ]);
+
+                    // 2. Ubah status pesanan menjadi Paid (Lunas)
+                    $billing->pesanan->update(['status_pesanan' => 'Paid']);
+
+                    // 3. Potong stok fisik produk & update status jadi 'Habis' jika stok = 0
+                    foreach ($billing->pesanan->detail as $detail) {
+                        $produk = Produk::lockForUpdate()->find($detail->produk_id);
+                        if ($produk) {
+                            $sisaStok = max(0, $produk->stok - $detail->jumlah);
+                            $produk->stok = $sisaStok;
+                            if ($sisaStok == 0) {
+                                $produk->status = 'Habis';
+                            }
+                            $produk->save();
+                        }
+                    }
+
+                    return response()->json([
+                        'status' => 'settlement',
+                        'is_paid' => true,
+                        'message' => 'Pembayaran terverifikasi di Midtrans Sandbox!',
+                    ]);
+                });
+            }
+
+            return response()->json([
+                'status' => $trxStatus,
+                'is_paid' => false,
+                'message' => "Status di Midtrans: {$trxStatus}",
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'pending',
+            'is_paid' => false,
+            'message' => 'Menunggu pembayaran di Simulator Midtrans...',
+        ]);
+    }
+
+    /**
+     * Memproses pelunasan transaksi (Metode Tunai / Non-Tunai).
+     * Menghitung uang kembalian, mengubah status pesanan ke Paid, serta memotong stok fisik.
+     */
     public function bayar(Request $request, $id)
     {
         $billing = Billing::with('pesanan.detail.produk')->findOrFail($id);
@@ -156,6 +265,7 @@ class PosController extends Controller
             'no_referensi' => 'nullable|string',
         ]);
 
+        // Validasi: Uang tunai yang diserahkan pelanggan tidak boleh kurang dari total tagihan
         if ($request->metode === 'Tunai' && $request->uang_dibayar < $billing->grand_total) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Uang tunai yang dibayarkan kurang dari total tagihan!'], 422);
@@ -164,11 +274,12 @@ class PosController extends Controller
         }
 
         return DB::transaction(function () use ($request, $billing) {
+            // Hitung uang kembalian (hanya untuk pembayaran tunai)
             $kembalian = $request->metode === 'Tunai' 
                 ? max(0, $request->uang_dibayar - $billing->grand_total) 
                 : 0;
 
-            // Simpan Pembayaran
+            // 1. Simpan riwayat pembayaran ke database
             Pembayaran::create([
                 'billing_id' => $billing->id,
                 'metode' => $request->metode,
@@ -178,10 +289,10 @@ class PosController extends Controller
                 'tanggal_bayar' => now(),
             ]);
 
-            // Update status pesanan jadi Paid
+            // 2. Perbarui status pesanan menjadi Paid (Lunas)
             $billing->pesanan->update(['status_pesanan' => 'Paid']);
 
-            // Potong stok otomatis & ubah status habis jika sisa 0
+            // 3. Potong stok otomatis & ubah status menu jadi Habis jika sisa stok = 0
             foreach ($billing->pesanan->detail as $detail) {
                 $produk = Produk::lockForUpdate()->find($detail->produk_id);
                 if ($produk) {

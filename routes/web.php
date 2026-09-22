@@ -31,6 +31,7 @@ Route::prefix('kasir')->name('pos.')->middleware('resto.auth')->group(function (
     Route::post('/pesan', [PosController::class, 'simpanPesanan'])->name('pesan');
     Route::get('/billing/{id}', [PosController::class, 'billing'])->name('billing');
     Route::get('/billing/{id}/va', [PosController::class, 'getVa'])->name('va');
+    Route::get('/billing/{id}/cek-status', [PosController::class, 'cekStatusMidtrans'])->name('cekStatus');
     Route::post('/billing/{id}/snap-token', [PosController::class, 'getSnapToken'])->name('snapToken');
     Route::post('/billing/{id}/bayar', [PosController::class, 'bayar'])->name('bayar');
 });

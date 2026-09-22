@@ -5,6 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "test": "node tests_e2e_playwright.cjs",
         "test:e2e": "node tests_e2e_playwright.cjs"
     },
     "devDependencies": {

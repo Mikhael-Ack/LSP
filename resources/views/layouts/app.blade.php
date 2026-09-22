@@ -28,6 +28,16 @@
             color: #f8fafc;
         }
         h1, h2, h3, h4, .font-heading { font-family: 'Instrument Sans', sans-serif; }
+        @media print {
+            #main-sidebar, #sidebar-backdrop, header, footer, .no-print {
+                display: none !important;
+            }
+            .min-h-screen, div.ml-0, div.lg\:ml-\[260px\] {
+                margin-left: 0 !important;
+                padding: 0 !important;
+                min-height: auto !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#0b0f19] min-h-screen antialiased text-slate-100 flex">

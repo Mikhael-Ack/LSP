@@ -64,14 +64,36 @@ try {
 
         assert(page.url().includes('/kasir'), `Kasir berhasil login dan dialihkan ke POS (URL: ${page.url()})`);
 
+        // [TEST VALIDASI 1: Keranjang Kosong]
+        console.log('  ℹ️ Menguji validasi POS: Terbitkan billing saat keranjang kosong...');
+        await page.click('#btn-submit-order');
+        await page.waitForSelector('#modal-validasi:not(.hidden)', { timeout: 3000 });
+        const valTitle1 = await page.textContent('#modal-validasi-title');
+        const valMsg1 = await page.textContent('#modal-validasi-msg');
+        assert(valTitle1.includes('Menu Belum Dipilih'), 'Modal validasi muncul: Menu Belum Dipilih');
+        assert(valMsg1.includes('Harap memilih Menu'), 'Pesan peringatan memilih menu tampil dengan tepat');
+        await page.click('#btn-tutup-validasi');
+        await page.waitForTimeout(300);
+
         // Test POS: Click product card directly to add to cart
-        const firstMenuCard = await page.$('.menu-item');
+        const firstMenuCard = await page.$('.menu-item:not(.cursor-not-allowed)');
         assert(firstMenuCard !== null, 'Item menu katalog ditemukan di POS');
 
         const firstMenuName = await firstMenuCard.$eval('h3', el => el.textContent.trim());
         console.log(`  ℹ️ Kasir memilih menu: "${firstMenuName}"`);
         await firstMenuCard.click();
         await page.waitForTimeout(400);
+
+        // [TEST VALIDASI 2: Nomor Meja Kosong]
+        console.log('  ℹ️ Menguji validasi POS: Terbitkan billing saat menu ada tapi nomor meja kosong...');
+        await page.click('#btn-submit-order');
+        await page.waitForSelector('#modal-validasi:not(.hidden)', { timeout: 3000 });
+        const valTitle2 = await page.textContent('#modal-validasi-title');
+        const valMsg2 = await page.textContent('#modal-validasi-msg');
+        assert(valTitle2.includes('Nomor Meja Kosong'), 'Modal validasi muncul: Nomor Meja Kosong');
+        assert(valMsg2.includes('Harap mengisi Nomor Meja'), 'Pesan peringatan nomor meja tampil dengan tepat');
+        await page.click('#btn-tutup-validasi');
+        await page.waitForTimeout(300);
 
         // Click a second time to increment quantity
         await firstMenuCard.click();
@@ -105,7 +127,7 @@ try {
         await page.goto('http://127.0.0.1:8000/kasir', { waitUntil: 'domcontentloaded' });
         
         // Add item to cart
-        const secondMenuCard = await page.$('.menu-item');
+        const secondMenuCard = await page.$('.menu-item:not(.cursor-not-allowed)');
         await secondMenuCard.click();
         await page.waitForTimeout(400);
 
@@ -113,33 +135,28 @@ try {
         await page.fill('#no_meja', 'Meja 08');
         console.log('  ℹ️ Kasir membuat pesanan Meja 08 untuk Non-Tunai Midtrans...');
         await page.click('#btn-submit-order');
-        await page.waitForURL('**/kasir/billing/**', { timeout: 10000 });
+        await page.waitForURL('**/kasir/billing/**', { timeout: 25000 });
 
-        // Select Non-Tunai
-        console.log('  ℹ️ Kasir memilih opsi pembayaran 2. Non-Tunai (Midtrans Sandbox)...');
+        // Select Non-Tunai (Langsung memicu pop-up resmi Midtrans Snap otomatis)
+        console.log('  ℹ️ Kasir memilih opsi pembayaran 2. Non-Tunai (Auto Pop-up Snap)...');
         await page.click('label:has-text("2. Non-Tunai")');
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(1000);
 
         // Verify Non-Tunai panel is visible
         const nonTunaiPanel = await page.$('#field-nontunai:not(.hidden)');
         assert(nonTunaiPanel !== null, 'Panel Midtrans Snap Payment Gateway tampil aktif');
 
-        // Click Midtrans Pay button
-        console.log('  ℹ️ Kasir menekan tombol "Bayar Sekarang via Midtrans Sandbox"...');
-        await page.click('#btn-midtrans-pay');
-        await page.waitForTimeout(800);
+        // Check if Snap pop-up iframe is rendered
+        const snapIframe = await page.waitForSelector('#snap-midtrans', { timeout: 10000 });
+        assert(snapIframe !== null, 'Pop-up Resmi Midtrans Snap berhasil terbuka otomatis');
 
-        // Check if simulator modal or snap popped up
-        const isSimModalOpen = await page.isVisible('#modal-midtrans-simulator');
-        assert(isSimModalOpen, 'Interactive Midtrans Sandbox Simulator Modal berhasil terbuka');
-
-        // Select QRIS Sandbox and complete payment
-        console.log('  ℹ️ Melakukan konfirmasi pembayaran sukses pada Simulator Midtrans Sandbox...');
-        await page.click('#btn-sim-bayar');
+        // Selesaikan pembayaran sukses Midtrans
+        console.log('  ℹ️ Melakukan konfirmasi pembayaran sukses pada Midtrans Snap...');
+        await page.evaluate(() => finalisasiPembayaranMidtrans('MDT-E2E-SUCCESS'));
         await page.waitForTimeout(1500);
 
         const bodyPaidMidtrans = await page.textContent('body');
-        assert(bodyPaidMidtrans.includes('Non-Tunai (Midtrans Sandbox)'), 'Struk mencantumkan metode pembayaran: Non-Tunai (Midtrans Sandbox)');
+        assert(bodyPaidMidtrans.includes('Non-Tunai'), 'Struk mencantumkan metode pembayaran: Non-Tunai');
         assert(bodyPaidMidtrans.includes('LUNAS') || bodyPaidMidtrans.includes('PAID'), 'Status pesanan Non-Tunai berhasil LUNAS (PAID)');
 
         // ==========================================

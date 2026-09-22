@@ -1,161 +1,158 @@
-<p align="center">
-  <h1 align="center">🍽️ Dapur Ina Aina</h1>
-  <p align="center">
-    <strong>Sistem Point of Sales (POS) & Manajemen Operasional Restoran Terintegrasi</strong>
-    <br />
-    <em>Uji Kompetensi Keahlian (UKK) Rekayasa Perangkat Lunak</em>
-  </p>
-  <p align="center">
-    <img src="https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 11" />
-    <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2" />
-    <img src="https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-    <img src="https://img.shields.io/badge/Midtrans-Sandbox-0052CC?style=for-the-badge&logo=cashapp&logoColor=white" alt="Midtrans Sandbox" />
-    <img src="https://img.shields.io/badge/MySQL-Database-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL" />
-    <img src="https://img.shields.io/badge/Playwright-E2E_Passed-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright E2E" />
-  </p>
-</p>
+# Dapur Ina Aina
+
+Sistem Point of Sales (POS) & Manajemen Operasional Restoran Terintegrasi.  
+Dikembangkan untuk Uji Kompetensi Keahlian (UKK) Rekayasa Perangkat Lunak.
+
+![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=flat-square&logo=laravel&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
+![Midtrans](https://img.shields.io/badge/Midtrans-Snap_SDK-0052CC?style=flat-square&logo=cashapp&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?style=flat-square&logo=mysql&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-29_E2E_Passed-2EAD33?style=flat-square&logo=playwright&logoColor=white)
 
 ---
 
-## 📌 Tentang Proyek
+## Ringkasan Proyek
 
-**Dapur Ina Aina** adalah aplikasi web manajemen restoran dan kasir modern yang dirancang untuk mengoptimalkan operasional rumah makan mulai dari etalase menu digital, pemesanan meja, pelunasan kasir (POS), integrasi pembayaran digital Midtrans Sandbox, kontrol inventaris stok bahan/menu secara otomatis, hingga laporan rekap omzet penjualan harian bagi administrator.
+**Dapur Ina Aina** adalah sistem informasi manajemen restoran dan kasir berbasis web yang dirancang untuk mengelola seluruh rantai operasional rumah makan secara terpadu. Sistem ini mencakup etalase katalog menu publik, manajemen pemesanan meja dan Point of Sales (POS), pelunasan kasir multi-metode (Tunai dan Non-Tunai Midtrans Payment Gateway), pelacakan inventaris stok bahan secara real-time, serta pelaporan keuangan omzet eksekutif siap cetak bagi manajemen restoran.
 
-Aplikasi ini dibangun menggunakan arsitektur **MVC (Model-View-Controller)** dengan framework **Laravel 11**, antarmuka modern bernuansa *dark theme premium* menggunakan **Tailwind CSS**, serta pengujian otomatis *End-to-End (E2E)* berbasis **Playwright**.
-
----
-
-## ✨ Fitur-Fitur Utama
-
-### 1. 🏠 Landing Page Interaktif & Responsif
-* Tampilan etalase menu modern ramah pengguna dengan transisi animasi halus.
-* Filter kategori menu secara interaktif (*Makanan Utama, Camilan, Minuman, Paket Hemat*).
-* Desain responsif di layar dekstop, tablet, maupun perangkat mobile smartphone.
-
-### 2. 🔐 Autentikasi & Otorisasi Berbasis Peran (*Role-Based Access Control*)
-* **Kasir (`kasir`)**: Akses POS kasir, input pesanan meja, penerbitan tagihan (billing), pelunasan nota, dan penambahan/manajemen menu & stok.
-* **Administrator (`admin`)**: Akses penuh ke seluruh sistem operasional restoran, monitoring kelola stok, dan laporan rekap omzet penjualan.
-
-### 3. 🛒 Point of Sales (POS) Kasir
-* Pemilihan menu cepat berbasis katalog dengan visual foto & harga.
-* Input nomor meja dan perhitungan subtotal + Pajak PB1 (10%) secara otomatis.
-* Pencatatan pesanan ke database dan penerbitan nomor tagihan unik (`BILL-YYYYMMDD-XXXX`).
-
-### 4. 💳 Pelunasan Tagihan (2 Metode Pembayaran)
-* **1. Tunai (Cash)**:
-  * Input nominal uang tunai yang diterima.
-  * Tombol denominasi cepat (*Uang Pas, 50K, 100K, 200K*).
-  * Perhitungan uang kembalian otomatis & validasi nominal tidak boleh kurang.
-* **2. Non-Tunai (Midtrans Sandbox Simulator)**:
-  * Menampilkan **Nomor Virtual Account (BCA VA)** secara jelas & mencolok dengan tombol **1-Klik Salin Nomor VA**.
-  * Tautan langsung ke [Midtrans BCA VA Simulator](https://simulator.sandbox.midtrans.com/bca/va/index).
-  * Opsi saluran pembayaran lain (*QRIS GoPay/ShopeePay, BNI VA, BRI VA*).
-  * Tombol konfirmasi lunas instan dengan pencatatan kode referensi transaksi.
-
-### 5. 🧾 Cetak Struk / Nota Pembayaran
-* Format struk kasir kasual yang siap cetak langsung (*Thermal Receipt Printer*).
-* Rincian menu, kuantitas, harga, pajak PB1 10%, uang dibayar, dan uang kembalian.
-
-### 6. 📦 Manajemen Menu & Kontrol Stok Realtime
-* Tambah menu baru dengan form modal terpadu (kategori, nama, harga, stok awal, deskripsi).
-* Update stok menu cepat & otomatis memotong stok saat pesanan lunas.
-* Pengubahan status menu otomatis menjadi `Habis` jika stok mencapai 0.
-
-### 7. 📊 Laporan Penjualan & Omzet Administrator
-* Ringkasan total omzet kotor, omzet bersih, dan rekap setoran Pajak PB1 (10%).
-* Pemisahan statistik omzet antara transaksi **Tunai** vs **Non-Tunai**.
-* Tabel riwayat transaksi lengkap dengan status lunas dan tanggal transaksi.
+Sistem dibangun di atas arsitektur MVC (Model-View-Controller) dengan Laravel 11, antarmuka modern responsif menggunakan Tailwind CSS, dan diverifikasi menggunakan pengujian otomatis End-to-End (E2E) berbasis Playwright.
 
 ---
 
-## 📂 Struktur Direktori Proyek
+## Fitur Utama
+
+### 1. Katalog Menu & Landing Page Publik
+* Etalase menu interaktif dengan filter kategori (Makanan Utama, Camilan, Minuman, Paket Hemat).
+* Desain responsif di seluruh resolusi layar (desktop, tablet, mobile).
+* Navigasi langsung menuju modul autentikasi petugas.
+
+### 2. Autentikasi & Kontrol Akses Berbasis Peran (RBAC)
+* **Kasir (`kasir`)**: Menangani transaksi pemesanan meja, penerbitan tagihan, pelunasan pembayaran nota, serta manajemen penambahan menu dan stok.
+* **Administrator (`admin`)**: Akses penuh ke seluruh modul, monitoring inventaris stok, serta rekapitulasi laporan penjualan dan omzet.
+
+### 3. Point of Sales (POS) Kasir & Validasi Terintegrasi
+* Antarmuka pemilihan menu terstruktur berbasis kartu katalog dan keranjang belanja dinamis.
+* Validasi pemesanan kondisional in-app (mencegah penerbitan tagihan jika keranjang kosong atau nomor meja belum terisi).
+* Perhitungan otomatis subtotal pesanan dan Pajak Restoran (PB1 10%).
+* Penerbitan nomor referensi tagihan unik (`BILL-YYYYMMDD-XXXX`).
+
+### 4. Pelunasan Pembayaran (Multi-Method Checkout)
+* **Metode Tunai (Cash)**:
+  * Input nominal uang tunai yang diterima dengan tombol denominasi cepat (Uang Pas, 50K, 100K, 200K).
+  * Perhitungan uang kembalian instan dan validasi nominal minimum.
+* **Metode Non-Tunai (Midtrans Snap SDK)**:
+  * Integrasi resmi pop-up modal `window.snap.pay`.
+  * Mendukung Virtual Account (BCA, BNI, BRI, Permata, Mandiri Bill), QRIS (GoPay/ShopeePay), dan E-Wallet.
+  * Auto-polling status transaksi dan auto-redirect ke nota struk resmi saat pelunasan terkonfirmasi.
+
+### 5. Cetak Nota Struk Pembayaran
+* Format struk standar kasir kasual siap cetak langsung (Thermal Receipt Printer).
+* Rincian nomor meja, kasir bertugas, item pesanan, pajak PB1, uang dibayar, dan kembalian.
+
+### 6. Kontrol Stok Realtime & Manajemen Menu
+* Form modal penambahan dan pengeditan menu (nama, kategori, harga, stok awal, status, deskripsi).
+* Pengurangan stok fisik otomatis saat pesanan dinyatakan lunas.
+* Penyesuaian status ketersediaan menjadi `Habis` secara otomatis jika stok mencapai 0.
+
+### 7. Laporan Penjualan Eksekutif
+* Format laporan akuntansi resmi dengan Kop Surat Restoran Dapur Ina Aina.
+* 4 kartu ringkasan eksekutif: Total Omzet Penjualan, Penerimaan Tunai, Penerimaan Non-Tunai, dan Estimasi Setoran Pajak PB1 10%.
+* Tabel transaksi berformat presisi tinggi (`whitespace-nowrap`) tanpa teks terpotong.
+* Lembar pengesahan tanda tangan Manajer Operasional dan Petugas Kasir pada mode cetak dokumen (`Ctrl + P`).
+
+---
+
+## Struktur Direktori Proyek
 
 ```plaintext
 Project/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/
-│   │   │   ├── AdminController.php      # Controller laporan & kelola menu/stok
-│   │   │   ├── AuthController.php       # Controller autentikasi & login
+│   │   │   ├── AdminController.php      # Controller laporan eksekutif & kelola stok menu
+│   │   │   ├── AuthController.php       # Controller login, logout, & role switching
 │   │   │   ├── Controller.php           # Base controller
-│   │   │   └── PosController.php        # Controller kasir POS, billing, & bayar
+│   │   │   └── PosController.php        # Controller kasir POS, validasi tagihan, & pembayaran
 │   │   └── Middleware/
-│   │       ├── RestoAdminMiddleware.php # Proteksi route khusus Administrator
-│   │       └── RestoAuthMiddleware.php  # Proteksi route login kasir & admin
+│   │       ├── RestoAdminMiddleware.php # Proteksi rute khusus Administrator
+│   │       └── RestoAuthMiddleware.php  # Proteksi rute kasir & admin terautentikasi
 │   ├── Models/
-│   │   ├── Billing.php                  # Model tagihan billing
-│   │   ├── DetailPesanan.php            # Model item detail pesanan
-│   │   ├── Kategori.php                 # Model kategori menu
-│   │   ├── Pembayaran.php               # Model pelunasan transaksi
-│   │   ├── Pesanan.php                  # Model pesanan & meja
-│   │   ├── Produk.php                   # Model produk menu & stok
-│   │   └── User.php                     # Model pengguna petugas
+│   │   ├── Billing.php                  # Model tagihan dan grand total
+│   │   ├── DetailPesanan.php            # Model rincian item pesanan
+│   │   ├── Kategori.php                 # Model relasi kategori menu
+│   │   ├── Pembayaran.php               # Model pelunasan transaksi dan metode bayar
+│   │   ├── Pesanan.php                  # Model pesanan meja pelanggan
+│   │   ├── Produk.php                   # Model produk menu dan stok fisik
+│   │   └── User.php                     # Model akun petugas dan peran
 │   └── Services/
-│       └── MidtransService.php          # Integrasi Midtrans Snap & Sandbox Core API
+│       └── MidtransService.php          # Integrasi Midtrans Snap SDK & Sandbox API
 ├── config/
-│   ├── midtrans.php                     # Konfigurasi Midtrans Server & Client Key
+│   ├── midtrans.php                     # Konfigurasi Server Key, Client Key, & Environment Midtrans
 │   └── ...
 ├── database/
-│   ├── migrations/                      # 7 File skema migrasi database lengkap
+│   ├── migrations/                      # 7 file skema migrasi tabel database
 │   ├── seeders/
-│   │   ├── DatabaseSeeder.php           # Seeder utama
-│   │   └── RestoSeeder.php              # Seeder akun bawaan & data menu
-│   └── database_dapur_ina_aina.sql      # Dump file SQL siap import
+│   │   ├── DatabaseSeeder.php           # Seeder database utama
+│   │   └── RestoSeeder.php              # Seeder data awal akun dan katalog menu
+│   └── database_dapur_ina_aina.sql      # Dump SQL siap import
 ├── resources/
 │   └── views/
 │       ├── admin/
-│       │   ├── laporan.blade.php        # Halaman laporan omzet admin
-│       │   └── stok.blade.php           # Halaman kelola menu & stok
+│       │   ├── laporan.blade.php        # Halaman laporan omzet akuntansi eksekutif
+│       │   └── stok.blade.php           # Halaman manajemen katalog menu & stok
 │       ├── auth/
-│       │   └── login.blade.php          # Halaman masuk petugas
-│       ├── components/                  # Blade icons & widget reusable
+│       │   └── login.blade.php          # Halaman autentikasi petugas
+│       ├── components/
+│       │   └── icon.blade.php           # Komponen SVG UI modular
 │       ├── layouts/
-│       │   └── app.blade.php            # Layout induk tema gelap responsif
+│       │   └── app.blade.php            # Master layout template antarmuka
 │       ├── pos/
-│       │   ├── billing.blade.php        # Halaman pelunasan billing & Midtrans VA
-│       │   └── index.blade.php          # Halaman kasir POS transaksi
+│       │   ├── billing.blade.php        # Modul pembayaran, pop-up Snap, & nota struk
+│       │   └── index.blade.php          # Modul kasir POS katalog & validasi keranjang
 │       └── welcome.blade.php            # Landing page publik interaktif
 ├── routes/
-│   └── web.php                          # Rute URL aplikasi
+│   └── web.php                          # Deklarasi seluruh endpoint routing aplikasi
 ├── tests/
 │   └── e2e/
-│       └── tests_e2e_playwright.cjs     # Pengujian E2E otomatis Playwright
-├── .env.example                         # Contoh konfigurasi environment
-├── package.json                         # Dependensi Vite, Tailwind & script test
-└── README.md                            # Dokumentasi lengkap proyek
+│       └── tests_e2e_playwright.cjs     # Suite pengujian otomatis E2E Playwright
+├── tests_e2e_playwright.cjs             # Runner pengujian otomatis root
+├── .env.example                         # Template konfigurasi environment
+├── package.json                         # Dependensi Vite, Tailwind, & script runner
+└── README.md                            # Dokumentasi teknis proyek
 ```
 
 ---
 
-## ⚙️ Persyaratan Sistem (*Prerequisites*)
+## Persyaratan Sistem
 
-* **PHP** >= 8.2 (ekstensi: `pdo_mysql`, `mbstring`, `openssl`, `curl`)
+* **PHP** >= 8.2 (ekstensi aktif: `pdo_mysql`, `mbstring`, `openssl`, `curl`)
 * **Composer** >= 2.0
 * **MySQL / MariaDB** (Port default: `3306`)
 * **Node.js** >= 18.x & **NPM**
 
 ---
 
-## 🚀 Panduan Instalasi & Menjalankan Aplikasi
+## Panduan Instalasi
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/USERNAME/REPO_NAME.git
-cd REPO_NAME
+git clone https://github.com/Mikhael-Ack/LSP.git
+cd LSP
 ```
 
-### 2. Pasang Dependensi PHP & Node.js
+### 2. Instalasi Dependensi
 ```bash
 composer install
 npm install
 ```
 
-### 3. Konfigurasi Environment (`.env`)
+### 3. Konfigurasi Environment
 Salin file `.env.example` menjadi `.env`:
 ```bash
 cp .env.example .env
 ```
-Buka file `.env` dan sesuaikan pengaturan database serta Midtrans:
+Sesuaikan konfigurasi database dan kredensial Midtrans di dalam `.env`:
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -164,67 +161,71 @@ DB_DATABASE=db_dapur_ina_aina
 DB_USERNAME=root
 DB_PASSWORD=
 
-# Kredensial Midtrans Sandbox (Opsional jika ingin menggunakan simulator)
+# Kredensial Midtrans Sandbox
 MIDTRANS_SERVER_KEY=SB-Mid-server-DemoRestoInaAina2026
 MIDTRANS_CLIENT_KEY=SB-Mid-client-DemoRestoInaAina2026
 MIDTRANS_IS_PRODUCTION=false
 ```
 
-Generate App Key:
+Generate application encryption key:
 ```bash
 php artisan key:generate
 ```
 
-### 4. Setup Database & Seeding Data
-Pastikan MySQL di XAMPP / MariaDB sudah berjalan dan buat database bernama `db_dapur_ina_aina`:
+### 4. Migrasi & Seeding Database
+Pastikan layanan database MySQL telah aktif, lalu jalankan:
 ```bash
-# Jalankan migrasi dan seeding akun & menu bawaan otomatis
 php artisan migrate --seed
 ```
-> *Alternatif:* Anda juga dapat mengimpor file `database/database_dapur_ina_aina.sql` langsung melalui phpMyAdmin.
+*Catatan:* Tersedia juga file dump `database/database_dapur_ina_aina.sql` yang dapat langsung diimpor melalui phpMyAdmin / MySQL CLI.
 
-### 5. Kompilasi Aset Frontend & Jalankan Server
-Buka 2 tab terminal:
+### 5. Menjalankan Server Aplikasi
+Jalankan compiler aset frontend dan HTTP server pada terminal terpisah:
 
-**Terminal 1 (Build / Dev Vite):**
+**Terminal 1 (Vite Asset Bundler):**
 ```bash
 npm run dev
-# atau untuk build produksi: npm run build
 ```
 
-**Terminal 2 (Server Laravel):**
+**Terminal 2 (Laravel Development Server):**
 ```bash
 php artisan serve
 ```
 
-Akses aplikasi di browser: **[http://127.0.0.1:8000](http://127.0.0.1:8000)**
+Akses sistem pada peramban: `http://127.0.0.1:8000`
 
 ---
 
-## 👥 Akun Pengguna Bawaan (*Default Credentials*)
+## Akun Pengguna Bawaan (Default Credentials)
 
-| Peran (Role) | Username | Password | Hak Akses |
+| Peran (Role) | Username | Password | Ruang Lingkup Hak Akses |
 |---|---|---|---|
-| **Administrator** | `admin` | `admin123` | Akses POS, Billing, Manajemen Stok, Laporan Omzet |
-| **Kasir** | `kasir` | `kasir123` | Akses POS, Billing, Pelunasan Nota, Tambah Menu & Stok |
+| **Administrator** | `admin` | `admin123` | Akses POS, Billing, Manajemen Menu/Stok, Laporan Rekapitulasi Omzet |
+| **Kasir** | `kasir` | `kasir123` | Akses POS, Billing, Pelunasan Transaksi, Tambah Menu Baru & Stok |
 
 ---
 
-## 🧪 Pengujian Otomatis (*Automated E2E Testing*)
+## Pengujian Otomatis (Automated E2E Testing)
 
-Aplikasi ini dilengkapi pengujian otomatis *End-to-End* berbasis Playwright yang memverifikasi 25 skenario kritis:
-* Autentikasi Kasir & Admin
-* Transaksi Kasir, Perhitungan PB1 10%, & Pelunasan Tunai
-* Pelunasan Non-Tunai Midtrans Sandbox (Virtual Account BCA & Simulator)
-* Hak Akses Kasir untuk Tambah Menu & Sinkronisasi Stok
-* Administrator CRUD Menu, Hapus Menu, & Rekapitulasi Laporan Omzet
+Sistem telah dilengkapi dengan test suite Playwright otomatis mencakup **29 skenario pengujian E2E**:
+* Autentikasi petugas Kasir & Administrator
+* Validasi modal in-app keranjang kosong dan nomor meja kosong di POS
+* Pemesanan menu, perhitungan pajak PB1 10%, dan pelunasan Tunai
+* Pemesanan dan integrasi pembayaran Non-Tunai Midtrans Snap Sandbox
+* Otorisasi kasir dalam manajemen katalog menu dan sinkronisasi stok realtime
+* Operasi CRUD penuh Administrator (tambah, perbarui harga/stok, hapus menu)
+* Rekapitulasi laporan penjualan dan statistik omzet Tunai vs Non-Tunai
 
-Untuk menjalankan pengujian:
+Eksekusi pengujian dengan perintah:
+```bash
+npm test
+```
+atau:
 ```bash
 npm run test:e2e
 ```
 
 ---
 
-## 📝 Lisensi
-Proyek ini dikembangkan untuk keperluan **Uji Kompetensi Keahlian (UKK) Rekayasa Perangkat Lunak** dan dilisensikan di bawah lisensi [MIT](LICENSE).
+## Lisensi
+Proyek ini dikembangkan untuk kebutuhan penilaian Uji Kompetensi Keahlian (UKK) Rekayasa Perangkat Lunak dan dilisensikan di bawah [MIT License](LICENSE).

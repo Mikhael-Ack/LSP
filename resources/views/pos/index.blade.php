@@ -252,13 +252,40 @@
 
 <!-- Floating Toast Notification -->
 <div id="toast-notif" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 border border-emerald-500/40 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold">
-    <x-icon name="check" class="w-5 h-5 text-emerald-400" />
+    <x-icon name="check" class="w-5 h-5 text-emerald-400" id="toast-icon-check" />
     <span id="toast-msg">Menu ditambahkan ke pesanan</span>
+</div>
+
+<!-- ========================================================================================= -->
+<!-- [PERUBAHAN]: MODAL POP-UP VALIDASI INTERAKTIF (PENGGANTI ALERT() BAWAAN BROWSER)            -->
+<!-- Muncul jika kasir belum memilih menu atau belum mengisi nomor meja saat klik tagihan      -->
+<!-- ========================================================================================= -->
+<div id="modal-validasi" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-200">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center relative transform transition-all scale-100 duration-150">
+        <!-- Icon Bulat Peringatan Dinamis (Kuning/Merah) -->
+        <div id="modal-validasi-icon-bg" class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mx-auto mb-4 flex items-center justify-center shadow-lg">
+            <svg id="modal-validasi-icon-warn" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <svg id="modal-validasi-icon-error" class="w-7 h-7 hidden text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+
+        <h3 id="modal-validasi-title" class="text-base font-bold text-white mb-1.5">Harap Lengkapi Data</h3>
+        <p id="modal-validasi-msg" class="text-xs text-slate-300 leading-relaxed mb-5">Silakan pilih menu pesanan terlebih dahulu.</p>
+
+        <button type="button" onclick="closeModalValidasi()" id="btn-tutup-validasi"
+                class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center justify-center gap-1.5">
+            <span>Mengerti & Lengkapi</span>
+        </button>
+    </div>
 </div>
 
 @push('scripts')
 <script>
     let cart = [];
+    let onModalValidasiClose = null;
 
     function openModalTambah() {
         const modal = document.getElementById('modal-tambah-menu');
@@ -272,16 +299,68 @@
         modal.classList.remove('flex');
     }
 
+    // =========================================================================
+    // [PERUBAHAN]: HELPER MODAL POP-UP VALIDASI (MENGGANTIKAN SEMUA ALERT() NATIVE)
+    // =========================================================================
+    function showPosAlert(title, message, type = 'warning', onCloseCallback = null) {
+        const modal = document.getElementById('modal-validasi');
+        const titleEl = document.getElementById('modal-validasi-title');
+        const msgEl = document.getElementById('modal-validasi-msg');
+        const iconBg = document.getElementById('modal-validasi-icon-bg');
+        const iconWarn = document.getElementById('modal-validasi-icon-warn');
+        const iconError = document.getElementById('modal-validasi-icon-error');
+        
+        if (titleEl) titleEl.innerText = title;
+        if (msgEl) msgEl.innerText = message;
+        
+        if (type === 'error') {
+            iconBg.className = 'w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 mx-auto mb-4 flex items-center justify-center shadow-lg';
+            iconWarn.classList.add('hidden');
+            iconError.classList.remove('hidden');
+        } else {
+            iconBg.className = 'w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mx-auto mb-4 flex items-center justify-center shadow-lg';
+            iconWarn.classList.remove('hidden');
+            iconError.classList.add('hidden');
+        }
+        
+        onModalValidasiClose = onCloseCallback;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Auto-focus tombol tutup agar kasir bisa langsung tekan Enter/Spasi
+        setTimeout(() => {
+            const btn = document.getElementById('btn-tutup-validasi');
+            if (btn) btn.focus();
+        }, 50);
+    }
+
+    function closeModalValidasi() {
+        const modal = document.getElementById('modal-validasi');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (typeof onModalValidasiClose === 'function') {
+            const cb = onModalValidasiClose;
+            onModalValidasiClose = null;
+            cb();
+        }
+    }
+
     let toastTimer;
-    function showToast(msg) {
+    function showToast(msg, type = 'success') {
         const toast = document.getElementById('toast-notif');
         const toastMsg = document.getElementById('toast-msg');
         toastMsg.innerText = msg;
-        toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+
+        if (type === 'warning') {
+            toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 bg-slate-900 border border-amber-500/60 text-amber-300 px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold';
+        } else {
+            toast.className = 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 bg-slate-900 border border-emerald-500/60 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold';
+        }
+
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => {
             toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
-        }, 1800);
+        }, 2200);
     }
 
     function filterKategori(katId) {
@@ -312,7 +391,7 @@
             if (existing.qty < maxStok) {
                 existing.qty++;
             } else {
-                alert('Maksimal stok tersedia hanya ' + maxStok);
+                showToast('⚠️ Maksimal stok ' + nama + ' hanya ' + maxStok, 'warning');
                 return;
             }
         } else {
@@ -331,7 +410,7 @@
             cart = cart.filter(i => i.id !== id);
         } else if (item.qty > item.maxStok) {
             item.qty = item.maxStok;
-            alert('Maksimal stok tercapai!');
+            showToast('⚠️ Maksimal stok tercapai (' + item.maxStok + ')', 'warning');
         }
         renderCart();
     }
@@ -387,16 +466,38 @@
         document.getElementById('grandtotal-val').innerText = 'Rp ' + grandtotal.toLocaleString('id-ID');
     }
 
+    // =========================================================================
+    // [PERUBAHAN]: LOGIKA PROSES PESANAN & VALIDASI SEBELUM TERBITKAN BILLING
+    // Memastikan keranjang tidak kosong dan nomor meja sudah diisi kasir
+    // =========================================================================
     async function prosesPesanan() {
-        const noMeja = document.getElementById('no_meja').value.trim();
-        if (!noMeja) {
-            alert('Silakan isi Nomor Meja terlebih dahulu!');
-            document.getElementById('no_meja').focus();
+        // [VALIDASI KONDISI 1]: Keranjang Menu harus memiliki minimal 1 item
+        if (cart.length === 0) {
+            showPosAlert(
+                'Menu Belum Dipilih',
+                'Harap memilih Menu terlebih dahulu sebelum menerbitkan billing / tagihan!',
+                'warning'
+            );
             return;
         }
 
-        if (cart.length === 0) {
-            alert('Pilih minimal satu menu untuk membuat pesanan!');
+        // [VALIDASI KONDISI 2]: Nomor Meja harus diisi (tidak boleh kosong/spasi)
+        const noMejaInput = document.getElementById('no_meja');
+        const noMeja = noMejaInput ? noMejaInput.value.trim() : '';
+        if (!noMeja) {
+            // Beri efek highlight merah di border input nomor meja
+            if (noMejaInput) {
+                noMejaInput.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/50');
+            }
+            showPosAlert(
+                'Nomor Meja Kosong',
+                'Harap mengisi Nomor Meja pelanggan terlebih dahulu!',
+                'warning',
+                () => {
+                    // Otomatis kursor fokus ke input no meja setelah modal ditutup
+                    if (noMejaInput) noMejaInput.focus();
+                }
+            );
             return;
         }
 
@@ -422,16 +523,28 @@
             if (response.ok && data.success) {
                 window.location.href = data.redirect;
             } else {
-                alert('Gagal: ' + (data.message || 'Terjadi kesalahan sistem'));
+                showPosAlert('Gagal Menerbitkan Billing', data.message || 'Terjadi kesalahan sistem saat memproses pesanan.', 'error');
                 btn.disabled = false;
                 btn.innerHTML = '<svg class="w-4 h-4 mr-1.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg> Terbitkan Billing / Tagihan';
             }
         } catch (err) {
-            alert('Gagal menghubungi server!');
+            showPosAlert('Kesalahan Koneksi', 'Gagal menghubungi server. Pastikan koneksi internet aktif.', 'error');
             btn.disabled = false;
             btn.innerHTML = '<svg class="w-4 h-4 mr-1.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg> Terbitkan Billing / Tagihan';
         }
     }
+
+    // =========================================================================
+    // [PERUBAHAN]: HILANGKAN HIGHLIGHT MERAH OTOMATIS SAAT KASIR MENGETIK NO MEJA
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        const noMejaInput = document.getElementById('no_meja');
+        if (noMejaInput) {
+            noMejaInput.addEventListener('input', function() {
+                this.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500/50');
+            });
+        }
+    });
 </script>
 @endpush
 @endsection

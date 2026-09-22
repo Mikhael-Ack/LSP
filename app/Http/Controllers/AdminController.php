@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
+    /**
+     * Menampilkan halaman Manajemen Menu & Kontrol Stok Fisik.
+     * Dapat diakses oleh Administrator maupun Kasir.
+     */
     public function stok()
     {
         $produkList = Produk::with('kategori')->get();
@@ -19,6 +23,10 @@ class AdminController extends Controller
         return view('admin.stok', compact('produkList', 'kategoriList'));
     }
 
+    /**
+     * Memperbarui kuantitas stok fisik suatu produk.
+     * Jika stok diset 0, status produk otomatis beralih menjadi 'Habis'.
+     */
     public function updateStok(Request $request, $id)
     {
         $request->validate([
@@ -34,6 +42,9 @@ class AdminController extends Controller
         return redirect()->back()->with('success', "Stok {$produk->nama_produk} berhasil diperbarui!");
     }
 
+    /**
+     * Menambahkan menu makanan/minuman baru ke katalog restoran.
+     */
     public function storeProduk(Request $request)
     {
         $request->validate([
@@ -59,6 +70,9 @@ class AdminController extends Controller
         return redirect()->back()->with('success', "Menu '{$produk->nama_produk}' berhasil ditambahkan ke katalog!");
     }
 
+    /**
+     * Memperbarui detail informasi menu produk (nama, kategori, harga, stok, deskripsi).
+     */
     public function updateProduk(Request $request, $id)
     {
         $request->validate([
@@ -85,6 +99,11 @@ class AdminController extends Controller
         return redirect()->back()->with('success', "Data menu '{$produk->nama_produk}' berhasil diperbarui!");
     }
 
+    /**
+     * Menghapus menu dari sistem.
+     * Jika menu sudah memiliki riwayat transaksi, sistem melakukan soft-protect
+     * dengan mengubah stok ke 0 dan status ke 'Habis' demi menjaga integritas data struk masa lalu.
+     */
     public function destroyProduk($id)
     {
         $produk = Produk::findOrFail($id);
@@ -103,9 +122,16 @@ class AdminController extends Controller
         return redirect()->back()->with('success', "Menu '{$nama}' berhasil dihapus dari sistem!");
     }
 
+    /**
+     * Menampilkan Laporan Penjualan & Rekapitulasi Keuangan Administrator.
+     * Menghitung total omzet kotor, pajak PB1, pemisahan Tunai vs Non-Tunai,
+     * serta 5 menu terlaris secara berkala (Mingguan, Bulanan, Semua).
+     */
     public function laporan(Request $request)
     {
         $periode = $request->get('periode', 'mingguan');
+        
+        // Ambil data billing yang status pesanannya sudah lunas (Paid)
         $query = Billing::with(['pesanan.detail.produk', 'pembayaran'])
             ->whereHas('pesanan', function ($q) {
                 $q->where('status_pesanan', 'Paid');
@@ -113,6 +139,7 @@ class AdminController extends Controller
 
         $now = Carbon::now();
 
+        // Filter rentang tanggal berdasarkan periode
         if ($periode === 'mingguan') {
             $query->whereBetween('created_at', [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()]);
             $labelPeriode = 'Minggu Ini (' . $now->copy()->startOfWeek()->format('d M Y') . ' - ' . $now->copy()->endOfWeek()->format('d M Y') . ')';
@@ -126,15 +153,16 @@ class AdminController extends Controller
 
         $transaksiList = $query->latest()->get();
 
+        // Kalkulasi ringkasan omzet dan pajak
         $totalPendapatan = $transaksiList->sum('grand_total');
         $totalTransaksi = $transaksiList->count();
         $totalPajak = $transaksiList->sum('pajak');
 
-        // Rekap Metode Bayar
+        // Rekapitulasi per metode pembayaran: Tunai vs Non-Tunai
         $totalTunai = $transaksiList->filter(fn($t) => optional($t->pembayaran)->metode === 'Tunai')->sum('grand_total');
         $totalNonTunai = $transaksiList->filter(fn($t) => in_array(optional($t->pembayaran)->metode, ['Non-Tunai', 'Debit', 'Kredit']))->sum('grand_total');
 
-        // Produk Terlaris
+        // Kalkulasi 5 produk terlaris dengan agregasi DB::raw
         $produkTerlaris = DetailPesanan::select('produk_id', DB::raw('SUM(jumlah) as total_terjual'), DB::raw('SUM(subtotal) as total_omzet'))
             ->whereHas('pesanan', function ($q) use ($periode, $now) {
                 $q->where('status_pesanan', 'Paid');
