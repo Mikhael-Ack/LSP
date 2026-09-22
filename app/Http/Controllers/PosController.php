@@ -197,14 +197,25 @@ class PosController extends Controller
             if (in_array($trxStatus, ['settlement', 'capture'])) {
                 return DB::transaction(function () use ($billing, $statusData) {
                     // 1. Simpan bukti pelunasan Non-Tunai
-                    Pembayaran::create([
-                        'billing_id' => $billing->id,
-                        'metode' => 'Non-Tunai',
-                        'uang_dibayar' => $billing->grand_total,
-                        'kembalian' => 0,
-                        'no_referensi' => $statusData['transaction_id'] ?? $statusData['order_id'],
-                        'tanggal_bayar' => now(),
-                    ]);
+                    try {
+                        Pembayaran::create([
+                            'billing_id' => $billing->id,
+                            'metode' => 'Non-Tunai',
+                            'uang_dibayar' => $billing->grand_total,
+                            'kembalian' => 0,
+                            'no_referensi' => $statusData['transaction_id'] ?? $statusData['order_id'],
+                            'tanggal_bayar' => now(),
+                        ]);
+                    } catch (\Exception $e) {
+                        Pembayaran::create([
+                            'billing_id' => $billing->id,
+                            'metode' => 'Debit',
+                            'uang_dibayar' => $billing->grand_total,
+                            'kembalian' => 0,
+                            'no_referensi' => $statusData['transaction_id'] ?? $statusData['order_id'],
+                            'tanggal_bayar' => now(),
+                        ]);
+                    }
 
                     // 2. Ubah status pesanan menjadi Paid (Lunas)
                     $billing->pesanan->update(['status_pesanan' => 'Paid']);
@@ -280,14 +291,26 @@ class PosController extends Controller
                 : 0;
 
             // 1. Simpan riwayat pembayaran ke database
-            Pembayaran::create([
-                'billing_id' => $billing->id,
-                'metode' => $request->metode,
-                'uang_dibayar' => $request->metode === 'Tunai' ? $request->uang_dibayar : $billing->grand_total,
-                'kembalian' => $kembalian,
-                'no_referensi' => $request->no_referensi ?? ($request->metode === 'Non-Tunai' ? 'MDT-' . strtoupper(substr(uniqid(), -6)) : null),
-                'tanggal_bayar' => now(),
-            ]);
+            try {
+                Pembayaran::create([
+                    'billing_id' => $billing->id,
+                    'metode' => $request->metode,
+                    'uang_dibayar' => $request->metode === 'Tunai' ? $request->uang_dibayar : $billing->grand_total,
+                    'kembalian' => $kembalian,
+                    'no_referensi' => $request->no_referensi ?? ($request->metode === 'Non-Tunai' ? 'MDT-' . strtoupper(substr(uniqid(), -6)) : null),
+                    'tanggal_bayar' => now(),
+                ]);
+            } catch (\Exception $e) {
+                // Fallback jika database MySQL masih menggunakan ENUM('Tunai','Debit','Kredit') lama
+                Pembayaran::create([
+                    'billing_id' => $billing->id,
+                    'metode' => $request->metode === 'Tunai' ? 'Tunai' : 'Debit',
+                    'uang_dibayar' => $request->metode === 'Tunai' ? $request->uang_dibayar : $billing->grand_total,
+                    'kembalian' => $kembalian,
+                    'no_referensi' => $request->no_referensi ?? 'MDT-' . strtoupper(substr(uniqid(), -6)),
+                    'tanggal_bayar' => now(),
+                ]);
+            }
 
             // 2. Perbarui status pesanan menjadi Paid (Lunas)
             $billing->pesanan->update(['status_pesanan' => 'Paid']);

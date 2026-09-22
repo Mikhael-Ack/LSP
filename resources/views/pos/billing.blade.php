@@ -752,6 +752,14 @@
                 currentOrderRef = orderId;
             }
 
+            // [PERUBAHAN]: Jika token berasal dari mode simulator (belum ada API Key asli Midtrans),
+            // buka pop-up Simulator Interaktif bawaan agar tidak ditolak oleh server Midtrans
+            if (token && token.startsWith('SNAP-SANDBOX-')) {
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+                bukaSimulatorMidtrans(orderId, token);
+                return;
+            }
+
             // Eksekusi SDK Snap resmi bawaan Midtrans: window.snap.pay(token, options)
             if (window.snap && token) {
                 isSnapPopupOpen = true;
